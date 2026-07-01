@@ -77,6 +77,15 @@
             <input type="text" id="checkout-address" placeholder="請輸入配送地址">
           </div>
 
+          <div class="form-field full">
+            <label>付款方式</label>
+            <div class="chip-group">
+              <label class="chip active" style="cursor:pointer;"><input type="radio" name="payment-method" value="ecpay_credit" checked style="margin-right:6px;">信用卡（綠界測試）</label>
+              <label class="chip" style="cursor:pointer;"><input type="radio" name="payment-method" value="cod" style="margin-right:6px;">貨到付款</label>
+            </div>
+          </div>
+          <p id="payment-note" style="font-size:12px; color:var(--color-muted); margin:0;">將導向綠界金流「測試環境」信用卡付款頁面，不會產生真實請款。</p>
+
           <button class="btn btn-primary btn-block" id="checkout-btn" style="margin-top:8px;">前往結帳</button>
         </div>
       </div>

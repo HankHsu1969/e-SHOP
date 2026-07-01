@@ -39,6 +39,14 @@ function statusBadgeClass(status) {
   }
 }
 
+function paymentBadgeHtml(paymentStatus) {
+  const color =
+    paymentStatus === "付款成功" ? "#1a9b62" : paymentStatus === "付款失敗" ? "#c0392b" : "#8a6d1f";
+  const bg =
+    paymentStatus === "付款成功" ? "#e5f8ef" : paymentStatus === "付款失敗" ? "#fdecea" : "#fdf6e3";
+  return `<span style="display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; color:${color}; background:${bg};">${paymentStatus || "未付款"}</span>`;
+}
+
 function orderRowHtml(order) {
   const dt = new Date(order.created_at);
   const dtStr = dt.toLocaleString("zh-TW", { hour12: false });
@@ -53,6 +61,7 @@ function orderRowHtml(order) {
       <td>${order.customer_name}<br><span style="color:var(--color-muted); font-size:12px;">${order.customer_phone || ""}</span></td>
       <td style="max-width:260px;">${itemsSummary}</td>
       <td>NT$ ${order.total}</td>
+      <td>${paymentBadgeHtml(order.payment_status)}</td>
       <td>
         <select class="status-select" data-id="${order.id}">
           ${STATUS_OPTIONS.map((s) => `<option value="${s}" ${s === order.status ? "selected" : ""}>${s}</option>`).join("")}
@@ -86,7 +95,7 @@ function applyStatusFilter() {
   const tbody = document.getElementById("orders-tbody");
   tbody.innerHTML = filtered.length
     ? filtered.map(orderRowHtml).join("")
-    : `<tr><td colspan="6" style="text-align:center; color:var(--color-muted); padding:30px;">目前沒有符合條件的訂單</td></tr>`;
+    : `<tr><td colspan="7" style="text-align:center; color:var(--color-muted); padding:30px;">目前沒有符合條件的訂單</td></tr>`;
   bindStatusSelects();
 }
 

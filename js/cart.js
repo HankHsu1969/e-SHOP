@@ -99,6 +99,21 @@ function renderOrderSuccess(order, cart, contact) {
     `${contact.name}．${contact.phone}．${contact.address}`;
 }
 
+function submitToECPay(actionUrl, params) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = actionUrl;
+  Object.entries(params).forEach(([key, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+
 async function checkout() {
   const cart = getCart();
   if (cart.length === 0) return;
@@ -114,48 +129,83 @@ async function checkout() {
     return;
   }
 
+  const paymentMethod =
+    document.querySelector('input[name="payment-method"]:checked')?.value || "cod";
+
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
   const total = subtotal + shipping;
   const member = getMember();
 
-  let orderNo = generateLocalOrderNo();
-
-  if (supabaseClient) {
-    const { data: order, error: orderError } = await supabaseClient
-      .from("frozen_orders")
-      .insert({
-        member_id: member && member.id ? member.id : null,
-        customer_name: contact.name,
-        customer_email: member ? member.email : null,
-        customer_phone: contact.phone,
-        customer_address: contact.address,
-        subtotal,
-        shipping_fee: shipping,
-        total
-      })
-      .select()
-      .single();
-
-    if (orderError) {
-      showToast("訂單送出失敗，請稍後再試");
-      return;
-    }
-
-    const items = cart.map((item) => ({
-      order_id: order.id,
-      product_sku: item.sku,
-      product_name: item.name,
-      unit_price: item.price,
-      quantity: item.quantity,
-      line_total: item.price * item.quantity
-    }));
-    await supabaseClient.from("frozen_order_items").insert(items);
-
-    orderNo = order.id.slice(0, 8).toUpperCase();
+  if (!supabaseClient) {
+    renderOrderSuccess({ orderNo: generateLocalOrderNo(), total }, cart, contact);
+    saveCart([]);
+    return;
   }
 
-  renderOrderSuccess({ orderNo, total }, cart, contact);
+  const checkoutBtn = document.getElementById("checkout-btn");
+  checkoutBtn.disabled = true;
+  checkoutBtn.textContent = "訂單處理中…";
+
+  const { data: order, error: orderError } = await supabaseClient
+    .from("frozen_orders")
+    .insert({
+      member_id: member && member.id ? member.id : null,
+      customer_name: contact.name,
+      customer_email: member ? member.email : null,
+      customer_phone: contact.phone,
+      customer_address: contact.address,
+      subtotal,
+      shipping_fee: shipping,
+      total
+    })
+    .select()
+    .single();
+
+  if (orderError) {
+    showToast("訂單送出失敗，請稍後再試");
+    checkoutBtn.disabled = false;
+    checkoutBtn.textContent = "前往結帳";
+    return;
+  }
+
+  const items = cart.map((item) => ({
+    order_id: order.id,
+    product_sku: item.sku,
+    product_name: item.name,
+    unit_price: item.price,
+    quantity: item.quantity,
+    line_total: item.price * item.quantity
+  }));
+  await supabaseClient.from("frozen_order_items").insert(items);
+
+  if (paymentMethod === "ecpay_credit") {
+    try {
+      const clientBackUrl = `${window.location.origin}${window.location.pathname.replace(/cart\.html$/, "")}payment-result.html?order=${order.id}`;
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/ecpay-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ order_id: order.id, client_back_url: clientBackUrl })
+      });
+      const payload = await resp.json();
+      if (!resp.ok || payload.error) throw new Error(payload.error || "金流建立失敗");
+
+      saveCart([]);
+      submitToECPay(payload.action, payload.params);
+      return;
+    } catch (err) {
+      showToast("信用卡付款導向失敗，請改用貨到付款或稍後再試");
+      checkoutBtn.disabled = false;
+      checkoutBtn.textContent = "前往結帳";
+      return;
+    }
+  }
+
+  renderOrderSuccess({ orderNo: order.id.slice(0, 8).toUpperCase(), total }, cart, contact);
   saveCart([]);
 }
 
@@ -177,4 +227,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const continueBtn = document.getElementById("continue-shopping-btn");
   if (continueBtn) continueBtn.addEventListener("click", () => { window.location.href = "products.html"; });
+
+  document.querySelectorAll('input[name="payment-method"]').forEach((radio) => {
+    radio.addEventListener("change", () => {
+      document.querySelectorAll('input[name="payment-method"]').forEach((r) => {
+        r.closest(".chip").classList.toggle("active", r.checked);
+      });
+      const note = document.getElementById("payment-note");
+      note.textContent =
+        radio.value === "ecpay_credit"
+          ? "將導向綠界金流「測試環境」信用卡付款頁面，不會產生真實請款。"
+          : "貨到付款訂單將直接成立，由物流人員收取現金或轉帳。";
+    });
+  });
 });
