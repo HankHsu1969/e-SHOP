@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>訂單後台｜速來得網購團購網</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="index.html" class="brand">
+      <span class="brand-logo">速</span>
+      <span>速來得網購團購網<small>訂單後台管理 (Internal)</small></span>
+    </a>
+    <a href="index.html" class="btn btn-outline btn-sm">回到前台網站</a>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="container">
+      <div class="section-head" style="text-align:left; margin:0 0 28px;">
+        <span class="section-tag">Order Dashboard</span>
+        <h2>訂單後台儀表板</h2>
+        <p>檢視全站訂單、依狀態篩選並更新出貨進度。此頁僅供內部使用，請勿公開分享連結。</p>
+      </div>
+
+      <div id="dashboard-content" style="display:none;">
+        <div class="stat-grid">
+          <div class="stat-card"><span>累計訂單數</span><strong id="stat-total-orders">0</strong></div>
+          <div class="stat-card"><span>累計營收</span><strong id="stat-total-revenue">NT$ 0</strong></div>
+          <div class="stat-card"><span>待處理訂單</span><strong id="stat-pending">0</strong></div>
+          <div class="stat-card"><span>今日新訂單</span><strong id="stat-today">0</strong></div>
+        </div>
+
+        <div class="toolbar">
+          <div class="chip-group" id="status-filter-chips">
+            <button class="chip active" data-status="全部">全部</button>
+            <button class="chip" data-status="待處理">待處理</button>
+            <button class="chip" data-status="已出貨">已出貨</button>
+            <button class="chip" data-status="已完成">已完成</button>
+            <button class="chip" data-status="已取消">已取消</button>
+          </div>
+          <button class="btn btn-outline btn-sm" id="refresh-btn">重新整理</button>
+        </div>
+
+        <div class="dashboard-table-wrap">
+          <table class="dashboard-table">
+            <thead>
+              <tr>
+                <th>訂單編號</th>
+                <th>下單時間</th>
+                <th>收件人</th>
+                <th>訂購商品</th>
+                <th>金額</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody id="orders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/main.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

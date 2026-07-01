@@ -63,8 +63,35 @@
             <span id="summary-total">NT$ 0</span>
           </div>
           <div class="summary-note">💡 滿 NT$1000 免運費，再多加購一件享團購優惠！</div>
-          <button class="btn btn-primary btn-block" id="checkout-btn">前往結帳</button>
+
+          <div class="form-field full">
+            <label for="checkout-name">收件人姓名</label>
+            <input type="text" id="checkout-name" placeholder="請輸入姓名">
+          </div>
+          <div class="form-field full">
+            <label for="checkout-phone">聯絡電話</label>
+            <input type="tel" id="checkout-phone" placeholder="09xx-xxx-xxx">
+          </div>
+          <div class="form-field full">
+            <label for="checkout-address">收件地址</label>
+            <input type="text" id="checkout-address" placeholder="請輸入配送地址">
+          </div>
+
+          <button class="btn btn-primary btn-block" id="checkout-btn" style="margin-top:8px;">前往結帳</button>
         </div>
+      </div>
+
+      <div class="summary-card" id="order-success" style="display:none; max-width:560px; margin:0 auto; text-align:center;">
+        <div style="font-size:44px;">✅</div>
+        <h3>訂單已成立，感謝您的購買！</h3>
+        <p style="color:var(--color-muted); font-size:13px;">訂單編號：<strong id="order-success-no"></strong></p>
+        <div class="order-history" id="order-success-items" style="text-align:left;"></div>
+        <div class="summary-row total">
+          <span>應付總額</span>
+          <span id="order-success-total">NT$ 0</span>
+        </div>
+        <p style="color:var(--color-muted); font-size:13px;" id="order-success-contact"></p>
+        <button class="btn btn-secondary btn-block" id="continue-shopping-btn" style="margin-top:10px;">繼續選購</button>
       </div>
     </div>
   </section>
@@ -91,6 +118,7 @@
           <li><a href="cart.html">購物車</a></li>
           <li><a href="member.html">會員資料</a></li>
           <li><a href="#">團購揪團</a></li>
+          <li><a href="dashboard.html" target="_blank">後台管理</a></li>
         </ul>
       </div>
       <div>
