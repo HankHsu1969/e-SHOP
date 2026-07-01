@@ -34,9 +34,17 @@ async function handleSignup(email, password, name) {
   const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
   if (authError) return { error: authError.message };
 
+  // Supabase 為防止 email 列舉攻擊，若信箱已被註冊，會回傳一個不存在於 auth.users 的假使用者物件
+  if (!authData.user || authData.user.identities?.length === 0) {
+    return { error: "此信箱已經註冊過，請改用「會員登入」。" };
+  }
+
   const { data: memberRow, error: memberError } = await supabaseClient
     .from("frozen_members")
-    .insert({ auth_user_id: authData.user?.id, email, name })
+    .upsert(
+      { auth_user_id: authData.user.id, email, name },
+      { onConflict: "email" }
+    )
     .select()
     .single();
 
@@ -52,11 +60,25 @@ async function handleLogin(email, password) {
   const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (authError) return { error: authError.message };
 
-  const { data: memberRow, error: memberError } = await supabaseClient
+  let { data: memberRow, error: memberError } = await supabaseClient
     .from("frozen_members")
     .select("*")
     .eq("auth_user_id", authData.user.id)
-    .single();
+    .maybeSingle();
+
+  // 帳號已存在於 auth.users（例如其他服務曾用同一信箱註冊），但尚未建立本站的會員資料，首次登入時自動補上
+  if (!memberError && !memberRow) {
+    const created = await supabaseClient
+      .from("frozen_members")
+      .upsert(
+        { auth_user_id: authData.user.id, email, name: email.split("@")[0] },
+        { onConflict: "email" }
+      )
+      .select()
+      .single();
+    memberRow = created.data;
+    memberError = created.error;
+  }
 
   if (memberError) return { error: memberError.message };
   return { member: memberRow };
