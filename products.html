@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商品｜速來得網購團購網</title>
+<meta name="description" content="速來得網購團購網商品列表，冷凍調理食品線上選購。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="index.html" class="brand">
+      <span class="brand-logo">速</span>
+      <span>速來得網購團購網<small>SULAIDE FROZEN FOOD MARKET</small></span>
+    </a>
+    <button class="nav-toggle" aria-label="選單">☰</button>
+    <nav class="main-nav">
+      <ul>
+        <li><a href="index.html">主畫面</a></li>
+        <li><a href="brand-story.html">品牌故事</a></li>
+        <li><a href="products.html" class="active">商品</a></li>
+        <li><a href="cart.html">購物車</a></li>
+        <li><a href="member.html">會員資料</a></li>
+      </ul>
+    </nav>
+    <a href="cart.html" class="nav-cart-btn">🛒 購物車<span class="cart-badge">0</span></a>
+  </div>
+</header>
+
+<main>
+  <section style="padding-bottom:0;">
+    <div class="container">
+      <div class="section-head" style="margin-bottom:20px;">
+        <span class="section-tag">全部商品</span>
+        <h2>冷凍調理食品專區</h2>
+        <p>嚴選台灣、日式、韓式、泰式家常美味，滿 NT$1000 免運，會員下單更享回饋點數。</p>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="search-input" placeholder="搜尋商品名稱，例如：三杯雞">
+        </div>
+        <div class="chip-group" id="category-chips">
+          <button class="chip active" data-category="全部">全部</button>
+        </div>
+      </div>
+
+      <div class="product-grid" id="all-products"></div>
+      <p id="no-result" style="display:none; text-align:center; color:var(--color-muted); padding:40px 0;">找不到符合條件的商品，換個關鍵字試試看吧！</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><span class="brand-logo">速</span>速來得網購團購網</div>
+        <p class="footer-desc">專營冷凍調理食品網購與團購，嚴選急速冷凍鎖鮮工藝，把餐廳等級的美味送到您家餐桌。</p>
+      </div>
+      <div>
+        <h4>快速連結</h4>
+        <ul>
+          <li><a href="index.html">主畫面</a></li>
+          <li><a href="brand-story.html">品牌故事</a></li>
+          <li><a href="products.html">商品</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>會員服務</h4>
+        <ul>
+          <li><a href="cart.html">購物車</a></li>
+          <li><a href="member.html">會員資料</a></li>
+          <li><a href="#">團購揪團</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>聯絡我們</h4>
+        <ul>
+          <li>客服專線：0800-123-456</li>
+          <li>服務時間：週一至週日 9:00-21:00</li>
+          <li>Email：service@sulaide.com.tw</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 速來得網購團購網 SULAIDE Co., Ltd. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/products-data.js"></script>
+<script src="js/main.js"></script>
+<script src="js/products.js"></script>
+<script>
+  let allProducts = [];
+  let currentCategory = "全部";
+  let currentKeyword = "";
+
+  function applyFilter() {
+    const grid = document.getElementById("all-products");
+    const noResult = document.getElementById("no-result");
+    const filtered = allProducts.filter((p) => {
+      const matchCategory = currentCategory === "全部" || p.category === currentCategory;
+      const matchKeyword = p.name.includes(currentKeyword) || p.description.includes(currentKeyword);
+      return matchCategory && matchKeyword;
+    });
+    grid.innerHTML = filtered.map(productCardHtml).join("");
+    bindAddToCartButtons(grid, allProducts);
+    noResult.style.display = filtered.length === 0 ? "block" : "none";
+  }
+
+  function buildCategoryChips() {
+    const categories = ["全部", ...new Set(allProducts.map((p) => p.category))];
+    const chipGroup = document.getElementById("category-chips");
+    chipGroup.innerHTML = categories
+      .map((cat) => `<button class="chip${cat === "全部" ? " active" : ""}" data-category="${cat}">${cat}</button>`)
+      .join("");
+    chipGroup.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        chipGroup.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+        currentCategory = chip.dataset.category;
+        applyFilter();
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    allProducts = await fetchProducts();
+    buildCategoryChips();
+    applyFilter();
+
+    document.getElementById("search-input").addEventListener("input", (e) => {
+      currentKeyword = e.target.value.trim();
+      applyFilter();
+    });
+  });
+</script>
+</body>
+</html>

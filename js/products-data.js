@@ -1,0 +1,148 @@
+// 速來得網購團購網 - 冷凍調理食品商品資料（Supabase 尚未連線時的離線備援資料）
+const PRODUCTS_DATA = [
+  {
+    sku: "FF-001",
+    name: "松阪豬燒肉調理包",
+    category: "肉類調理",
+    description: "嚴選松阪豬部位，醬燒入味，急速冷凍鎖住鮮甜，微波 3 分鐘即可上桌。",
+    spec: "250g / 包",
+    price: 189,
+    original_price: 229,
+    stock: 120,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132422_f5ae14ee-affd-41e8-8947-2459956d2a65.png",
+    tags: ["熱銷", "肉類"],
+    is_group_buy: true,
+    sort_order: 1
+  },
+  {
+    sku: "FF-002",
+    name: "泰式打拋豬調理包",
+    category: "異國料理",
+    description: "道地泰式香料拌炒豬絞肉與九層塔，酸辣開胃，快速復熱即可享用泰式風味。",
+    spec: "280g / 包",
+    price: 169,
+    original_price: 199,
+    stock: 100,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132423_49bfc5ed-3023-4c95-a81e-4cb7cb8f726e.png",
+    tags: ["辣", "異國"],
+    is_group_buy: true,
+    sort_order: 2
+  },
+  {
+    sku: "FF-003",
+    name: "日式唐揚炸雞塊",
+    category: "炸物點心",
+    description: "選用去骨雞腿肉醃製，外酥內嫩，氣炸 10 分鐘香氣四溢，居家聚餐首選。",
+    spec: "400g / 包",
+    price: 199,
+    original_price: 239,
+    stock: 150,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132424_b190f93d-d5d8-49e4-a289-4d35edd7748a.png",
+    tags: ["熱銷", "炸物"],
+    is_group_buy: false,
+    sort_order: 3
+  },
+  {
+    sku: "FF-004",
+    name: "起司焗烤牛肉燉飯",
+    category: "燉飯米食",
+    description: "濃郁牛肉燉飯覆蓋雙倍起司，烤箱加熱即成拉絲美味，一人份的療癒時光。",
+    spec: "350g / 盒",
+    price: 219,
+    original_price: 259,
+    stock: 90,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132425_68a8c225-d030-4858-8546-1d2c8ec9ce2e.png",
+    tags: ["起司控"],
+    is_group_buy: true,
+    sort_order: 4
+  },
+  {
+    sku: "FF-005",
+    name: "三杯雞調理包",
+    category: "台式經典",
+    description: "麻油、醬油、米酒經典三杯比例慢燉雞腿肉，九層塔畫龍點睛，媽媽味道免下廚。",
+    spec: "300g / 包",
+    price: 179,
+    original_price: 219,
+    stock: 110,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132426_a4a32ca0-a8fd-4b87-9e7c-c485e22436d5.png",
+    tags: ["台式", "熱銷"],
+    is_group_buy: true,
+    sort_order: 5
+  },
+  {
+    sku: "FF-006",
+    name: "麻婆豆腐調理包",
+    category: "中式家常",
+    description: "四川風味豆瓣醬拌炒豬絞肉與嫩豆腐，麻辣鮮香下飯神器。",
+    spec: "300g / 包",
+    price: 149,
+    original_price: 179,
+    stock: 130,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132427_ad8c0ea3-917b-4168-8bd4-b23c99d17894.png",
+    tags: ["辣", "下飯"],
+    is_group_buy: false,
+    sort_order: 6
+  },
+  {
+    sku: "FF-007",
+    name: "蒜香奶油鯖魚排",
+    category: "海鮮水產",
+    description: "挪威鯖魚菲力搭配奶油蒜香調味，煎烤即食，補充優質蛋白質與 Omega-3。",
+    spec: "2 片 / 200g",
+    price: 209,
+    original_price: 249,
+    stock: 80,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132610_9e6f590a-f76e-4ee5-905a-5422072fd736.png",
+    tags: ["海鮮", "健康"],
+    is_group_buy: false,
+    sort_order: 7
+  },
+  {
+    sku: "FF-008",
+    name: "韓式泡菜豬五花",
+    category: "異國料理",
+    description: "韓式泡菜與豬五花薄片同炒，酸辣爽口，搭配白飯或拉麵都對味。",
+    spec: "280g / 包",
+    price: 189,
+    original_price: 219,
+    stock: 100,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132611_004828ee-369f-424d-874f-86758aa126fe.png",
+    tags: ["韓式", "辣"],
+    is_group_buy: true,
+    sort_order: 8
+  },
+  {
+    sku: "FF-009",
+    name: "日式咖哩牛肉調理包",
+    category: "異國料理",
+    description: "長時間燉煮牛肉塊與紅蘿蔔，濃郁咖哩醬汁，附餐拌飯或烏龍麵皆宜。",
+    spec: "320g / 包",
+    price: 229,
+    original_price: 269,
+    stock: 95,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132613_6d14a55f-8bb2-4879-b85f-bc25ffa31802.png",
+    tags: ["日式", "熱銷"],
+    is_group_buy: false,
+    sort_order: 9
+  },
+  {
+    sku: "FF-010",
+    name: "海鮮總匯燉飯",
+    category: "燉飯米食",
+    description: "鮮蝦、淡菜、透抽等海鮮總匯與濃郁米飯燉煮，海味十足的一鍋料理。",
+    spec: "380g / 盒",
+    price: 239,
+    original_price: 279,
+    stock: 70,
+    image_url: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132614_2ac2938d-bbc8-4381-b0b8-a351b7271f17.png",
+    tags: ["海鮮", "燉飯"],
+    is_group_buy: true,
+    sort_order: 10
+  }
+];
+
+const BRAND_IMAGES = {
+  hero: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132415_3a5bf8ac-da9d-4d56-912f-b01a0984397f.png",
+  story: "https://d8j0ntlcm91z4.cloudfront.net/user_3BVzWwzFpQMnczqiEQPK9nELTJU/hf_20260701_132417_9a71bbbf-53de-48cc-8dbb-2d9a2fd16975.png"
+};

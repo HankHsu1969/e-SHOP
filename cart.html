@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>購物車｜速來得網購團購網</title>
+<meta name="description" content="速來得網購團購網購物車，確認您的冷凍調理食品訂單。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="index.html" class="brand">
+      <span class="brand-logo">速</span>
+      <span>速來得網購團購網<small>SULAIDE FROZEN FOOD MARKET</small></span>
+    </a>
+    <button class="nav-toggle" aria-label="選單">☰</button>
+    <nav class="main-nav">
+      <ul>
+        <li><a href="index.html">主畫面</a></li>
+        <li><a href="brand-story.html">品牌故事</a></li>
+        <li><a href="products.html">商品</a></li>
+        <li><a href="cart.html" class="active">購物車</a></li>
+        <li><a href="member.html">會員資料</a></li>
+      </ul>
+    </nav>
+    <a href="cart.html" class="nav-cart-btn">🛒 購物車<span class="cart-badge">0</span></a>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="container">
+      <div class="section-head" style="margin-bottom:20px;">
+        <span class="section-tag">購物車</span>
+        <h2>確認您的訂單內容</h2>
+        <p>滿 NT$1000 即享免運，會員下單可累積回饋點數。</p>
+      </div>
+
+      <div class="cart-layout">
+        <div>
+          <div class="cart-list" id="cart-list"></div>
+          <div class="cart-empty" id="cart-empty" style="display:none;">
+            <div class="icon">🛒</div>
+            <p>購物車目前是空的，快去挑選喜歡的冷凍美食吧！</p>
+            <a href="products.html" class="btn btn-primary" style="margin-top:14px;">前往選購商品</a>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <h3>訂單摘要</h3>
+          <div class="summary-row">
+            <span>商品小計</span>
+            <span id="summary-subtotal">NT$ 0</span>
+          </div>
+          <div class="summary-row">
+            <span>運費</span>
+            <span id="summary-shipping">NT$ 0</span>
+          </div>
+          <div class="summary-row total">
+            <span>應付總額</span>
+            <span id="summary-total">NT$ 0</span>
+          </div>
+          <div class="summary-note">💡 滿 NT$1000 免運費，再多加購一件享團購優惠！</div>
+          <button class="btn btn-primary btn-block" id="checkout-btn">前往結帳</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><span class="brand-logo">速</span>速來得網購團購網</div>
+        <p class="footer-desc">專營冷凍調理食品網購與團購，嚴選急速冷凍鎖鮮工藝，把餐廳等級的美味送到您家餐桌。</p>
+      </div>
+      <div>
+        <h4>快速連結</h4>
+        <ul>
+          <li><a href="index.html">主畫面</a></li>
+          <li><a href="brand-story.html">品牌故事</a></li>
+          <li><a href="products.html">商品</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>會員服務</h4>
+        <ul>
+          <li><a href="cart.html">購物車</a></li>
+          <li><a href="member.html">會員資料</a></li>
+          <li><a href="#">團購揪團</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>聯絡我們</h4>
+        <ul>
+          <li>客服專線：0800-123-456</li>
+          <li>服務時間：週一至週日 9:00-21:00</li>
+          <li>Email：service@sulaide.com.tw</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 速來得網購團購網 SULAIDE Co., Ltd. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/main.js"></script>
+<script src="js/cart.js"></script>
+</body>
+</html>

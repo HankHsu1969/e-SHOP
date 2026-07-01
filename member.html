@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>會員資料｜速來得網購團購網</title>
+<meta name="description" content="速來得網購團購網會員登入、註冊與資料管理。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="index.html" class="brand">
+      <span class="brand-logo">速</span>
+      <span>速來得網購團購網<small>SULAIDE FROZEN FOOD MARKET</small></span>
+    </a>
+    <button class="nav-toggle" aria-label="選單">☰</button>
+    <nav class="main-nav">
+      <ul>
+        <li><a href="index.html">主畫面</a></li>
+        <li><a href="brand-story.html">品牌故事</a></li>
+        <li><a href="products.html">商品</a></li>
+        <li><a href="cart.html">購物車</a></li>
+        <li><a href="member.html" class="active">會員資料</a></li>
+      </ul>
+    </nav>
+    <a href="cart.html" class="nav-cart-btn">🛒 購物車<span class="cart-badge">0</span></a>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="container">
+      <div class="section-head" style="margin-bottom:20px;">
+        <span class="section-tag">會員專區</span>
+        <h2>登入或加入速來得會員</h2>
+        <p>會員可累積購物點數、管理收件資訊，掌握團購最新優惠。</p>
+      </div>
+
+      <!-- 訪客：登入 / 註冊 -->
+      <div id="guest-panel" class="member-layout" style="display:none;">
+        <div class="member-card">
+          <div class="member-avatar">👤</div>
+          <h3>歡迎回來</h3>
+          <p style="opacity:0.9; font-size:13px;">登入即可查看訂單、累積點數與享會員專屬優惠。</p>
+        </div>
+        <div class="form-card">
+          <div class="auth-tabs">
+            <button class="active" data-target="login">會員登入</button>
+            <button data-target="signup">加入會員</button>
+          </div>
+
+          <form id="login-form">
+            <div id="login-msg" class="form-msg"></div>
+            <div class="form-field full">
+              <label for="login-email">電子信箱</label>
+              <input type="email" id="login-email" required placeholder="you@example.com">
+            </div>
+            <div class="form-field full">
+              <label for="login-password">密碼</label>
+              <input type="password" id="login-password" required placeholder="請輸入密碼">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">登入</button>
+          </form>
+
+          <form id="signup-form" style="display:none;">
+            <div id="signup-msg" class="form-msg"></div>
+            <div class="form-field full">
+              <label for="signup-name">姓名</label>
+              <input type="text" id="signup-name" required placeholder="請輸入您的姓名">
+            </div>
+            <div class="form-field full">
+              <label for="signup-email">電子信箱</label>
+              <input type="email" id="signup-email" required placeholder="you@example.com">
+            </div>
+            <div class="form-field full">
+              <label for="signup-password">密碼</label>
+              <input type="password" id="signup-password" required minlength="6" placeholder="至少 6 碼">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">註冊會員</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 已登入會員 -->
+      <div id="member-panel" class="member-layout" style="display:none;">
+        <div class="member-card">
+          <div class="member-avatar">🧊</div>
+          <h3 id="member-name-display">會員您好</h3>
+          <p id="member-email-display" style="opacity:0.9; font-size:13px;"></p>
+          <span class="member-level" id="member-level-display">一般會員</span>
+          <div class="member-points">
+            <strong id="member-points-display">0</strong>
+            <span>累積點數</span>
+          </div>
+          <button class="btn btn-outline btn-block" style="margin-top:18px; background:transparent; border-color:#fff; color:#fff;" id="logout-btn">登出</button>
+        </div>
+
+        <div class="form-card">
+          <h3>編輯會員資料</h3>
+          <form id="profile-form">
+            <div id="profile-msg" class="form-msg"></div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="profile-name">姓名</label>
+                <input type="text" id="profile-name">
+              </div>
+              <div class="form-field">
+                <label for="profile-phone">聯絡電話</label>
+                <input type="tel" id="profile-phone" placeholder="09xx-xxx-xxx">
+              </div>
+              <div class="form-field full">
+                <label for="profile-address">收件地址</label>
+                <input type="text" id="profile-address" placeholder="請輸入配送地址">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-secondary" style="margin-top:10px;">儲存變更</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><span class="brand-logo">速</span>速來得網購團購網</div>
+        <p class="footer-desc">專營冷凍調理食品網購與團購，嚴選急速冷凍鎖鮮工藝，把餐廳等級的美味送到您家餐桌。</p>
+      </div>
+      <div>
+        <h4>快速連結</h4>
+        <ul>
+          <li><a href="index.html">主畫面</a></li>
+          <li><a href="brand-story.html">品牌故事</a></li>
+          <li><a href="products.html">商品</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>會員服務</h4>
+        <ul>
+          <li><a href="cart.html">購物車</a></li>
+          <li><a href="member.html">會員資料</a></li>
+          <li><a href="#">團購揪團</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>聯絡我們</h4>
+        <ul>
+          <li>客服專線：0800-123-456</li>
+          <li>服務時間：週一至週日 9:00-21:00</li>
+          <li>Email：service@sulaide.com.tw</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 速來得網購團購網 SULAIDE Co., Ltd. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/main.js"></script>
+<script src="js/member.js"></script>
+</body>
+</html>
