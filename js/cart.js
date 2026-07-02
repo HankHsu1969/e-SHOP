@@ -181,7 +181,7 @@ async function checkout() {
 
   if (paymentMethod === "ecpay_credit") {
     try {
-      const clientBackUrl = `${window.location.origin}${window.location.pathname.replace(/cart\.html$/, "")}payment-result.html?order=${order.id}`;
+      const clientBackUrl = `${window.location.origin}/payment-result.html?order=${order.id}`;
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/ecpay-checkout`, {
         method: "POST",
         headers: {
