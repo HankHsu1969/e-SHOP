@@ -3,8 +3,8 @@
 // 這裡刻意不驗證 Supabase JWT（verify_jwt=false），改用 CheckMacValue 做來源驗證。
 import { createHash } from "node:crypto";
 
-const ECPAY_HASH_KEY = "5294y06JbISpM5x9";
-const ECPAY_HASH_IV = "v77hoKGq4kWlNwB8";
+const ECPAY_HASH_KEY = "pwFHCqoQZGmho4w6";
+const ECPAY_HASH_IV = "EkRm7iFT261dpevs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -28,7 +28,7 @@ function generateCheckMacValue(params: Record<string, string>): string {
   for (const key of sortedKeys) raw += `&${key}=${params[key]}`;
   raw += `&HashIV=${ECPAY_HASH_IV}`;
   const encoded = dotNetUrlEncode(raw);
-  return createHash("md5").update(encoded, "utf8").digest("hex").toUpperCase();
+  return createHash("sha256").update(encoded, "utf8").digest("hex").toUpperCase();
 }
 
 Deno.serve(async (req: Request) => {

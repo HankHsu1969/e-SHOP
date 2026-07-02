@@ -2,9 +2,9 @@
 // 依訂單建立綠界「全方位金流」AioCheckOut 表單參數，前端收到後自動轉導至綠界收銀台。
 import { createHash } from "node:crypto";
 
-const ECPAY_MERCHANT_ID = "2000132";
-const ECPAY_HASH_KEY = "5294y06JbISpM5x9";
-const ECPAY_HASH_IV = "v77hoKGq4kWlNwB8";
+const ECPAY_MERCHANT_ID = "3002607";
+const ECPAY_HASH_KEY = "pwFHCqoQZGmho4w6";
+const ECPAY_HASH_IV = "EkRm7iFT261dpevs";
 const ECPAY_CHECKOUT_URL = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -29,7 +29,7 @@ function generateCheckMacValue(params: Record<string, string>): string {
   for (const key of sortedKeys) raw += `&${key}=${params[key]}`;
   raw += `&HashIV=${ECPAY_HASH_IV}`;
   const encoded = dotNetUrlEncode(raw);
-  return createHash("md5").update(encoded, "utf8").digest("hex").toUpperCase();
+  return createHash("sha256").update(encoded, "utf8").digest("hex").toUpperCase();
 }
 
 function formatDate(d: Date): string {
