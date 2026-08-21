@@ -24,6 +24,32 @@ function renderGuestView() {
   document.getElementById("member-panel").style.display = "none";
 }
 
+// 若該登入的 auth 使用者在 frozen_members 尚無對應資料列，自動補建一筆
+// （常見於：帳號已存在於 auth.users 但首次登入本站，或透過 Google OAuth 首次登入）
+async function ensureMemberRow(authUser) {
+  const email = authUser.email;
+  const { data: existing, error: selectError } = await supabaseClient
+    .from("frozen_members")
+    .select("*")
+    .eq("auth_user_id", authUser.id)
+    .maybeSingle();
+
+  if (selectError) return { error: selectError.message };
+  if (existing) return { member: existing };
+
+  const fallbackName =
+    authUser.user_metadata?.full_name || authUser.user_metadata?.name || email.split("@")[0];
+
+  const { data: created, error: insertError } = await supabaseClient
+    .from("frozen_members")
+    .upsert({ auth_user_id: authUser.id, email, name: fallbackName }, { onConflict: "email" })
+    .select()
+    .single();
+
+  if (insertError) return { error: insertError.message };
+  return { member: created };
+}
+
 async function handleSignup(email, password, name) {
   if (!supabaseClient) {
     const fakeMember = { id: crypto.randomUUID(), email, name, member_level: "一般會員", points: 0 };
@@ -60,28 +86,19 @@ async function handleLogin(email, password) {
   const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (authError) return { error: authError.message };
 
-  let { data: memberRow, error: memberError } = await supabaseClient
-    .from("frozen_members")
-    .select("*")
-    .eq("auth_user_id", authData.user.id)
-    .maybeSingle();
+  return ensureMemberRow(authData.user);
+}
 
-  // 帳號已存在於 auth.users（例如其他服務曾用同一信箱註冊），但尚未建立本站的會員資料，首次登入時自動補上
-  if (!memberError && !memberRow) {
-    const created = await supabaseClient
-      .from("frozen_members")
-      .upsert(
-        { auth_user_id: authData.user.id, email, name: email.split("@")[0] },
-        { onConflict: "email" }
-      )
-      .select()
-      .single();
-    memberRow = created.data;
-    memberError = created.error;
+async function handleGoogleLogin() {
+  if (!supabaseClient) {
+    return { error: "本站示範模式尚未連線資料庫，無法使用 Google 登入。" };
   }
-
-  if (memberError) return { error: memberError.message };
-  return { member: memberRow };
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}/member.html` }
+  });
+  if (error) return { error: error.message };
+  return {};
 }
 
 async function handleUpdateProfile(member, updates) {
@@ -145,6 +162,33 @@ function initMemberPage() {
       renderMemberView(result.member);
     }
   });
+
+  const googleBtn = document.getElementById("google-login-btn");
+  googleBtn.addEventListener("click", async () => {
+    googleBtn.disabled = true;
+    const result = await handleGoogleLogin();
+    if (result.error) {
+      showMsg(loginMsg, result.error, "error");
+      googleBtn.disabled = false;
+    }
+    // 成功時瀏覽器會被導向 Google，這裡不需要再做事
+  });
+
+  // 從 Google 授權導回本頁時，Supabase 會觸發 SIGNED_IN；重新整理已登入的分頁則會先收到 INITIAL_SESSION
+  if (supabaseClient) {
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
+        const result = await ensureMemberRow(session.user);
+        if (result.member) {
+          saveMember(result.member);
+          renderMemberView(result.member);
+        }
+      } else if (event === "SIGNED_OUT") {
+        clearMember();
+        renderGuestView();
+      }
+    });
+  }
 
   const profileForm = document.getElementById("profile-form");
   const profileMsg = document.getElementById("profile-msg");
