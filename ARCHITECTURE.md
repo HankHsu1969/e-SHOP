@@ -32,8 +32,11 @@ flowchart TB
     end
 
     subgraph Supabase["Supabase 專案（Course Test）"]
-        DB[("PostgreSQL\nfrozen_products / frozen_members\nfrozen_cart_items / frozen_orders\nfrozen_order_items")]
+        DB[("PostgreSQL\nfrozen_products (公開讀)\nfrozen_members / frozen_cart_items (僅本人)\nfrozen_orders / frozen_order_items (anon 完全不可存取)")]
         Auth["Supabase Auth\n(email/password 會員登入)"]
+        EF0["Edge Function\ncreate-order"]
+        EFS["Edge Function\norder-status"]
+        EFA["Edge Function\nadmin-orders"]
         EF1["Edge Function\necpay-checkout"]
         EF2["Edge Function\necpay-notify (Webhook)"]
     end
@@ -44,17 +47,22 @@ flowchart TB
 
     Repo -- "git push 觸發自動建置部署" --> Site
     Browser -- "HTTPS 靜態資源" --> Site
-    Browser -- "Supabase JS SDK\n(anon key)" --> DB
+    Browser -- "Supabase JS SDK\n(anon key，僅商品/會員資料)" --> DB
     Browser -- "登入/註冊" --> Auth
-    Browser -- "建立訂單後呼叫" --> EF1
-    EF1 -- "讀寫訂單" --> DB
+    Browser -- "送出結帳表單" --> EF0
+    EF0 -- "service role 寫入訂單" --> DB
+    Browser -- "建立金流連結" --> EF1
+    EF1 -- "service role 讀寫訂單" --> DB
     EF1 -- "回傳付款表單參數" --> Browser
     Browser -- "表單 POST 導向" --> Checkout
     Checkout -- "使用者刷卡" --> Checkout
     Checkout -- "Server 端 Webhook\n(ReturnURL)" --> EF2
-    EF2 -- "驗證後更新付款狀態" --> DB
+    EF2 -- "service role 更新付款狀態" --> DB
     Checkout -- "瀏覽器導回 ClientBackURL" --> Site
-    Site -- "payment-result.html 輪詢查詢" --> DB
+    Site -- "payment-result.html 輪詢查詢" --> EFS
+    EFS -- "service role 讀取狀態" --> DB
+    Site -- "後台儀表板讀寫" --> EFA
+    EFA -- "service role 讀寫" --> DB
 ```
 
 ---
@@ -156,12 +164,20 @@ erDiagram
 
 > 注意：Course Test 這個 Supabase 專案原本就有 `customers` / `categories` / `drinks` / `profiles` / `orders` / `order_items` 等舊表（來自其他練習專案），與本網站的 `frozen_*` 系列資料表**互不相關**，刻意用 `frozen_` 前綴區隔避免混用。
 
-### RLS（Row Level Security）現況
+### RLS（Row Level Security）現況（2026-08 起已收緊）
 
-所有 `frozen_*` 資料表皆已啟用 RLS，但目前的政策是「**匿名 anon key 可自由讀寫**」（`using (true)` / `with check (true)`），僅適用於 demo／測試階段。正式上線前應改為：
+所有 `frozen_*` 資料表皆已啟用 RLS，權限現況如下：
 
-- `frozen_orders` / `frozen_order_items`：只允許本人（`auth.uid()` 對應的 `member_id`）或後台管理角色讀取
-- 後台 `dashboard.html` 目前僅用一組寫死在前端 JS 的通行碼（`sulaide2026`）做輕量門檻，**不是真正的權限控管**
+| 資料表 | anon key 直接存取 | 說明 |
+|---|---|---|
+| `frozen_products` | 可讀（SELECT） | 商品目錄本來就設計為公開瀏覽 |
+| `frozen_members` | 僅本人（`auth.uid() = auth_user_id`） | 需登入 Supabase Auth，才能讀寫自己的會員資料 |
+| `frozen_cart_items` | 僅本人（`member_id` 對應 `auth.uid()`） | 目前前端尚未串接使用，先收緊避免未來誤用時暴露 |
+| `frozen_orders` / `frozen_order_items` | **完全不開放**（無任何 anon 政策） | 訂單建立、查詢、後台管理一律改走下方的 Edge Functions，不再讓前端 anon key 直接碰觸這兩張表 |
+
+會這樣設計是因為本站保留「訪客免登入結帳」與「後台儀表板無真正帳號系統」這兩個功能，若只是單純用 `auth.uid()` 限制 SELECT/UPDATE，訪客下單後將無法查詢自己的付款結果、後台也讀不到任何訂單。因此改用**服務端（service role）Edge Functions 作為唯一存取入口**：前端 anon key 完全無法直接讀寫 `frozen_orders`／`frozen_order_items`，所有動作都必須通過下方對應的 Function 驗證與轉發。
+
+- 後台 `dashboard.html` 仍用一組通行碼（`sulaide2026`）做門檻，但現在該通行碼會被 `admin-orders` Function 在伺服器端驗證後才放行資料，**不再只是前端 UI 遮擋**（之前就算通行碼答錯，直接用 anon key 打 API 一樣能讀到全部訂單；現在完全讀不到）。
 
 ---
 
@@ -169,10 +185,13 @@ erDiagram
 
 | Function | 觸發者 | JWT 驗證 | 用途 |
 |---|---|---|---|
+| `create-order` | 前端 `cart.js`（使用者送出結帳表單） | 否（`verify_jwt=false`，訪客免登入下單） | 驗證商品/數量格式、計算金額，寫入 `frozen_orders` + `frozen_order_items`，回傳新訂單 |
+| `order-status` | 前端 `payment-result.js`（輪詢付款結果） | 否 | 依訂單 id 回傳最少必要欄位（付款狀態、金額、方式），不回傳個資 |
+| `admin-orders` | 後台 `dashboard.js` | 否，改用 `x-admin-passcode` 標頭驗證通行碼 | 列出全部訂單（GET）／更新訂單出貨狀態（PATCH） |
 | `ecpay-checkout` | 前端 `cart.js`（使用者按下「前往結帳」且選信用卡） | 否（`verify_jwt=false`，一般訪客結帳無登入） | 讀取訂單、組出綠界 `AioCheckOut` 表單參數並計算 `CheckMacValue`，回傳給前端自動送出表單 |
 | `ecpay-notify` | 綠界伺服器（`ReturnURL` webhook，非使用者瀏覽器） | 否（改用 `CheckMacValue` 驗證來源合法性） | 驗證綠界回傳的 `CheckMacValue`，更新 `frozen_orders.payment_status` |
 
-兩者皆使用 `SUPABASE_SERVICE_ROLE_KEY`（Supabase 自動注入的環境變數）直接呼叫 PostgREST，繞過 RLS 限制，確保金流狀態更新一定成功。
+以上皆使用 `SUPABASE_SERVICE_ROLE_KEY`（Supabase 自動注入的環境變數）直接呼叫 PostgREST，繞過 RLS 限制。由於 `frozen_orders`／`frozen_order_items` 已不對 anon key 開放任何直接存取，這五支 Function 是唯二能讀寫這兩張表的路徑，而不是像過去那樣前端可以繞過 Function 直接呼叫 Supabase REST API。
 
 ### 金流串接關鍵參數
 
@@ -188,31 +207,39 @@ erDiagram
 sequenceDiagram
     participant U as 使用者瀏覽器
     participant C as cart.html / cart.js
+    participant F0 as create-order
     participant D as Supabase DB
     participant F1 as ecpay-checkout
     participant E as 綠界收銀台
     participant F2 as ecpay-notify
     participant P as payment-result.html
+    participant FS as order-status
 
     U->>C: 填寫收件資訊、選信用卡、按下結帳
-    C->>D: insert frozen_orders (未付款)
-    C->>D: insert frozen_order_items
+    C->>F0: POST {收件資訊, 品項}
+    F0->>F0: 驗證欄位、重新計算金額（不信任前端金額）
+    F0->>D: service role insert frozen_orders (未付款)
+    F0->>D: service role insert frozen_order_items
+    F0-->>C: 回傳新訂單 {id, total, ...}
     C->>F1: POST {order_id, client_back_url}
-    F1->>D: 查詢訂單與明細
+    F1->>D: service role 查詢訂單與明細
     F1->>F1: 產生 MerchantTradeNo、計算 CheckMacValue(SHA256)
-    F1->>D: 寫入 merchant_trade_no
+    F1->>D: service role 寫入 merchant_trade_no
     F1-->>C: 回傳 AioCheckOut 表單參數
     C->>E: 自動提交表單，瀏覽器導向綠界
     U->>E: 輸入信用卡資訊付款
     E->>F2: Server端 POST 付款結果 (ReturnURL)
     F2->>F2: 驗證 CheckMacValue
-    F2->>D: update frozen_orders.payment_status
+    F2->>D: service role update frozen_orders.payment_status
     F2-->>E: 回應 "1|OK"
     E->>P: 使用者按「返回商店」導向 ClientBackURL
-    P->>D: 輪詢查詢 payment_status（最多 8 次、間隔 1.5 秒）
-    D-->>P: 回傳最新付款狀態
+    P->>FS: GET ?id=訂單id（最多 8 次、間隔 1.5 秒）
+    FS->>D: service role 查詢最少必要欄位
+    FS-->>P: 回傳最新付款狀態
     P-->>U: 顯示 付款成功 / 處理中 / 失敗
 ```
+
+> anon key 全程不曾直接接觸 `frozen_orders`／`frozen_order_items`：前端只知道 Edge Function 的網址，實際的資料表存取一律由 service role 在伺服器端完成。
 
 ---
 
@@ -230,8 +257,9 @@ sequenceDiagram
 
 ## 8. 已知限制 / 上線前待辦
 
-1. **RLS 政策過於寬鬆**：目前 `frozen_orders` 等表對任何持有 anon key 的人開放讀寫，正式上線前需改為依 `auth.uid()` 限制存取範圍。
-2. **後台儀表板無真正權限控管**：`dashboard.html` 僅前端寫死通行碼，建議改用 Supabase Auth 角色 + RLS，或另外架設需登入的後台。
-3. **金流為測試環境**：需向綠界申請正式特約商店代號，並將 `ECPAY_MERCHANT_ID` / `ECPAY_HASH_KEY` / `ECPAY_HASH_IV` 換成正式環境金鑰，同時將 `ECPAY_CHECKOUT_URL` 由 `payment-stage.ecpay.com.tw` 改為正式 `payment.ecpay.com.tw`。
-4. **會員系統與購物車尚未完全綁定 Supabase**：目前購物車以 `localStorage` 為主，只有下單當下才寫入 Supabase 的 `frozen_orders`；`frozen_cart_items` 表已建立但前端尚未串接使用。
+1. ~~RLS 政策過於寬鬆~~ **已修正（2026-08）**：`frozen_orders`／`frozen_order_items` 已完全收回 anon 直接存取權限，改由 `create-order`／`order-status`／`admin-orders` 三支 Edge Functions 代理；`frozen_members`／`frozen_cart_items` 已改為只能存取本人資料。
+2. **後台儀表板仍非正式帳號權限系統**：`admin-orders` Function 雖然已把驗證邏輯搬到伺服器端，但仍是「單一組共用通行碼」（`sulaide2026`），並非個別帳號、也無法記錄是誰操作。正式上線前建議改用 Supabase Auth 角色 + RLS 搭配後台專屬登入。
+3. **金流為測試環境**：需向綠界申請正式特約商店代號，並將 `ECPAY_MERCHANT_ID` / `ECPAY_HASH_KEY` / `ECPAY_HASH_IV` 換成正式環境金鑰（目前寫死在 Edge Function 原始碼中，正式金鑰應改存於 Supabase 的 Function 環境變數，不可提交進版本控制），同時將 `ECPAY_CHECKOUT_URL` 由 `payment-stage.ecpay.com.tw` 改為正式 `payment.ecpay.com.tw`。
+4. **會員系統與購物車尚未完全綁定 Supabase**：目前購物車以 `localStorage` 為主，只有下單當下才會呼叫 `create-order` 寫入 Supabase；`frozen_cart_items` 表已建立且已加上 RLS，但前端尚未串接使用。
 5. **Netlify 網域為預設子網域**：尚未綁定自訂網域（如 sulaide.com.tw）。
+6. **與其他課程共用同一個 Supabase 專案**：本網站與其他練習共用同一個 project（Course Test），若要把本專案公開當教材，建議搬到獨立的 Supabase 專案，避免公開 `SUPABASE_URL`／anon key 時牽連到其他練習資料。

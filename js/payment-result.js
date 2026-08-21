@@ -42,13 +42,15 @@ function renderState(state, order) {
 }
 
 async function pollOrderStatus(orderId, attempt = 1) {
-  const { data: order, error } = await supabaseClient
-    .from("frozen_orders")
-    .select("*")
-    .eq("id", orderId)
-    .single();
-
-  if (error || !order) {
+  let order;
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/order-status?id=${encodeURIComponent(orderId)}`, {
+      headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY }
+    });
+    const payload = await resp.json();
+    if (!resp.ok || payload.error) throw new Error(payload.error || "查詢失敗");
+    order = payload.order;
+  } catch (err) {
     renderState("not-found", null);
     return;
   }

@@ -7,26 +7,52 @@ const DASHBOARD_AUTH_KEY = "sld_dashboard_auth";
 const STATUS_OPTIONS = ["待處理", "已出貨", "已完成", "已取消"];
 
 function checkDashboardAuth() {
-  if (sessionStorage.getItem(DASHBOARD_AUTH_KEY) === "1") return true;
+  if (sessionStorage.getItem(DASHBOARD_AUTH_KEY)) return true;
   const input = prompt("請輸入後台通行碼：");
   if (input === DASHBOARD_PASSCODE) {
-    sessionStorage.setItem(DASHBOARD_AUTH_KEY, "1");
+    sessionStorage.setItem(DASHBOARD_AUTH_KEY, input);
     return true;
   }
   return false;
 }
 
+function getAdminPasscode() {
+  return sessionStorage.getItem(DASHBOARD_AUTH_KEY);
+}
+
 async function fetchOrders() {
-  if (!supabaseClient) return [];
-  const { data, error } = await supabaseClient
-    .from("frozen_orders")
-    .select("*, frozen_order_items(*)")
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error(error);
+  const passcode = getAdminPasscode();
+  if (!passcode) return [];
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-orders`, {
+      headers: {
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        apikey: SUPABASE_ANON_KEY,
+        "x-admin-passcode": passcode
+      }
+    });
+    const payload = await resp.json();
+    if (!resp.ok || payload.error) throw new Error(payload.error || "讀取失敗");
+    return payload.orders;
+  } catch (err) {
+    console.error(err);
     return [];
   }
-  return data;
+}
+
+async function updateOrderStatus(orderId, status) {
+  const passcode = getAdminPasscode();
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-orders`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      apikey: SUPABASE_ANON_KEY,
+      "x-admin-passcode": passcode
+    },
+    body: JSON.stringify({ order_id: orderId, status })
+  });
+  return resp.ok;
 }
 
 function statusBadgeClass(status) {
@@ -104,7 +130,11 @@ function bindStatusSelects() {
     select.addEventListener("change", async (e) => {
       const id = e.target.dataset.id;
       const newStatus = e.target.value;
-      await supabaseClient.from("frozen_orders").update({ status: newStatus }).eq("id", id);
+      const ok = await updateOrderStatus(id, newStatus);
+      if (!ok) {
+        showToast("狀態更新失敗，請稍後再試");
+        return;
+      }
       const order = allOrders.find((o) => o.id === id);
       if (order) order.status = newStatus;
       renderStats(allOrders);

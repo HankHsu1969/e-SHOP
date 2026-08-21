@@ -147,37 +147,38 @@ async function checkout() {
   checkoutBtn.disabled = true;
   checkoutBtn.textContent = "訂單處理中…";
 
-  const { data: order, error: orderError } = await supabaseClient
-    .from("frozen_orders")
-    .insert({
-      member_id: member && member.id ? member.id : null,
-      customer_name: contact.name,
-      customer_email: member ? member.email : null,
-      customer_phone: contact.phone,
-      customer_address: contact.address,
-      subtotal,
-      shipping_fee: shipping,
-      total
-    })
-    .select()
-    .single();
-
-  if (orderError) {
+  let order;
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/create-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        apikey: SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({
+        member_id: member && member.id ? member.id : null,
+        customer_name: contact.name,
+        customer_email: member ? member.email : null,
+        customer_phone: contact.phone,
+        customer_address: contact.address,
+        items: cart.map((item) => ({
+          sku: item.sku,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        }))
+      })
+    });
+    const payload = await resp.json();
+    if (!resp.ok || payload.error) throw new Error(payload.error || "訂單建立失敗");
+    order = payload.order;
+  } catch (err) {
     showToast("訂單送出失敗，請稍後再試");
     checkoutBtn.disabled = false;
     checkoutBtn.textContent = "前往結帳";
     return;
   }
-
-  const items = cart.map((item) => ({
-    order_id: order.id,
-    product_sku: item.sku,
-    product_name: item.name,
-    unit_price: item.price,
-    quantity: item.quantity,
-    line_total: item.price * item.quantity
-  }));
-  await supabaseClient.from("frozen_order_items").insert(items);
 
   if (paymentMethod === "ecpay_credit") {
     try {
